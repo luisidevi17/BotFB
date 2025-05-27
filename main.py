@@ -4,127 +4,183 @@ import json
 import logging
 from datetime import datetime
 from threading import Thread
-from telegram import Update, Bot
+from telegram import Update, Bot, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from apscheduler.schedulers.background import BackgroundScheduler
+from keep_alive import keep_alive  # Importa keep_alive
 
-TOKEN = "TU_TOKEN_AQUI"
-OWNER_ID = 882455317
+keep_alive()  # Mantiene activo el bot en Replit
 
-GROUPS_FILE = "groups.json"
-TEXT_FILE = "text.txt"
-IMAGE_FILE = "image.jpg"
-COOKIES_FILE = "cookies.txt"
-
+# Configura logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-bot = Bot(token=TOKEN)
-updater = Updater(token=TOKEN, use_context=True)
-dispatcher = updater.dispatcher
+TOKEN = "TU_TOKEN_DE_TELEGRAM"
+OWNER_ID = 882455317  # Tu ID de Telegram
 
-auto_mode = {"active": False}
-scheduler = BackgroundScheduler()
-scheduler.start()
+DATA_FILE = 'data.json'
 
-def save_file(filename, content):
-    with open(filename, 'w', encoding='utf-8') as f:
-        f.write(content)
+def load_data():
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r') as f:
+            return json.load(f)
+    else:
+        return {
+            "texto": "",
+            "imagen": None,
+            "cookies": "",
+            "grupos": [],
+            "modo_auto": False,
+            "horarios": ["08:00", "18:00"]
+        }
 
-def load_file(filename):
-    if not os.path.exists(filename):
-        return None
-    with open(filename, 'r', encoding='utf-8') as f:
-        return f.read()
+def save_data(data):
+    with open(DATA_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
 
-def send_startup_message():
-    bot.send_message(chat_id=OWNER_ID, text="Bot iniciado correctamente y en funcionamiento.")
+data = load_data()
+
+# Función de publicación (simulada, reemplazar con requests a Facebook)
+def publicar():
+    texto = data['texto']
+    imagen = data['imagen']
+    grupos = data['grupos']
+    cookies = data['cookies']
+
+    if not texto or not cookies or not grupos:
+        print("Faltan datos para publicar.")
+        return
+
+    for i, grupo in enumerate(grupos, 1):
+        print(f"{i} - Publicando en {grupo}...")
+        time.sleep(3)  # Simula tiempo de espera entre publicaciones
+    print("¡Publicación completada!")
+
+def auto_publicar():
+    if data["modo_auto"]:
+        publicar()
 
 def start(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        update.message.reply_text("Hola, el bot está activo. Usa /help para ver comandos.")
+    if update.effective_user.id != OWNER_ID:
+        return
+    update.message.reply_text("¡Bot activo y funcionando!")
 
 def help_command(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        update.message.reply_text("/start - Ver estado del bot
-/set_text - Guardar texto
-/set_image - Guardar imagen
-/set_groups - Guardar enlaces de grupos
-/view_config - Ver configuración actual
-/set_cookies - Cambiar cookies de Facebook
-/auto_on - Activar publicaciones automáticas
-/auto_off - Desactivar publicaciones automáticas")
+    if update.effective_user.id != OWNER_ID:
+        return
+    update.message.reply_text("""Comandos disponibles:
+/start - Confirmar que el bot está activo
+/help - Ver los comandos
+/texto <mensaje> - Guardar texto de publicación
+/imagen - Enviar imagen para publicar
+/cookies <cadena> - Establecer cookies de Facebook
+/grupos - Ver grupos
+/agregargrupo <nombre> - Agregar grupo
+/borrargrupos - Eliminar todos los grupos
+/activar - Activar modo automático
+/desactivar - Desactivar modo automático
+/ver - Ver configuración actual
+""")
 
-def set_text(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        text = update.message.text.replace('/set_text ', '')
-        save_file(TEXT_FILE, text)
-        update.message.reply_text("Texto guardado.")
+def ver(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    grupos = "\n".join([f"{i+1}- {g}" for i, g in enumerate(data["grupos"])])
+    resumen = f"""Texto: {data['texto'] or 'Ninguno'}
+Imagen: {'Sí' if data['imagen'] else 'No'}
+Cookies: {'Sí' if data['cookies'] else 'No'}
+Modo automático: {'Activo' if data['modo_auto'] else 'Inactivo'}
+Grupos:
+{grupos or 'Ninguno'}"""
+    update.message.reply_text(resumen)
 
-def set_image(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID and update.message.photo:
-        photo_file = update.message.photo[-1].get_file()
-        photo_file.download(IMAGE_FILE)
+def texto(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    msg = " ".join(context.args)
+    data['texto'] = msg
+    save_data(data)
+    update.message.reply_text("Texto guardado.")
+
+def imagen(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    if update.message.photo:
+        file = update.message.photo[-1].get_file()
+        file.download('imagen.jpg')
+        data['imagen'] = 'imagen.jpg'
+        save_data(data)
         update.message.reply_text("Imagen guardada.")
+    else:
+        update.message.reply_text("Envía una imagen junto con el comando.")
 
-def set_groups(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        groups = update.message.text.replace('/set_groups ', '').split()
-        save_file(GROUPS_FILE, json.dumps(groups))
-        update.message.reply_text("Grupos guardados.")
+def cookies(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    cks = " ".join(context.args)
+    data['cookies'] = cks
+    save_data(data)
+    update.message.reply_text("Cookies guardadas.")
 
-def set_cookies(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        cookies = update.message.text.replace('/set_cookies ', '')
-        save_file(COOKIES_FILE, cookies)
-        update.message.reply_text("Cookies guardadas.")
+def agregar_grupo(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    grupo = " ".join(context.args)
+    if grupo:
+        data["grupos"].append(grupo)
+        save_data(data)
+        update.message.reply_text("Grupo agregado.")
+    else:
+        update.message.reply_text("Envía un nombre o enlace del grupo.")
 
-def view_config(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        text = load_file(TEXT_FILE) or "No hay texto."
-        groups = json.loads(load_file(GROUPS_FILE) or "[]")
-        cookies = load_file(COOKIES_FILE) or "No hay cookies."
-        msg = f"Texto: {text}\nImagen: {'Sí' if os.path.exists(IMAGE_FILE) else 'No'}\nCookies: {'Sí' if cookies else 'No'}\nGrupos: "
-        for i, g in enumerate(groups, 1):
-            msg += f"\n{i}. {g}"
-        update.message.reply_text(msg)
+def borrar_grupos(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    data["grupos"] = []
+    save_data(data)
+    update.message.reply_text("Todos los grupos eliminados.")
 
-def publish_to_facebook():
-    text = load_file(TEXT_FILE)
-    cookies = load_file(COOKIES_FILE)
-    groups = json.loads(load_file(GROUPS_FILE) or "[]")
-    for i, group in enumerate(groups):
-        # Aquí iría la lógica real de publicación con cookies
-        print(f"Publicando en {group}: {text}")
-        time.sleep(10)
+def activar(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    data["modo_auto"] = True
+    save_data(data)
+    update.message.reply_text("Modo automático activado.")
 
-def auto_publish():
-    if auto_mode["active"]:
-        publish_to_facebook()
+def desactivar(update: Update, context: CallbackContext):
+    if update.effective_user.id != OWNER_ID:
+        return
+    data["modo_auto"] = False
+    save_data(data)
+    update.message.reply_text("Modo automático desactivado.")
 
-def auto_on(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        auto_mode["active"] = True
-        scheduler.add_job(auto_publish, 'cron', hour=8, minute=0, id='morning')
-        scheduler.add_job(auto_publish, 'cron', hour=18, minute=0, id='evening')
-        update.message.reply_text("Modo automático activado.")
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-def auto_off(update: Update, context: CallbackContext):
-    if update.effective_user.id == OWNER_ID:
-        auto_mode["active"] = False
-        scheduler.remove_all_jobs()
-        update.message.reply_text("Modo automático desactivado.")
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help_command))
+    dp.add_handler(CommandHandler("ver", ver))
+    dp.add_handler(CommandHandler("texto", texto))
+    dp.add_handler(CommandHandler("imagen", imagen))
+    dp.add_handler(CommandHandler("cookies", cookies))
+    dp.add_handler(CommandHandler("grupos", ver))
+    dp.add_handler(CommandHandler("agregargrupo", agregar_grupo))
+    dp.add_handler(CommandHandler("borrargrupos", borrar_grupos))
+    dp.add_handler(CommandHandler("activar", activar))
+    dp.add_handler(CommandHandler("desactivar", desactivar))
+    dp.add_handler(MessageHandler(Filters.photo, imagen))
 
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("help", help_command))
-dispatcher.add_handler(CommandHandler("set_text", set_text))
-dispatcher.add_handler(CommandHandler("set_groups", set_groups))
-dispatcher.add_handler(CommandHandler("set_cookies", set_cookies))
-dispatcher.add_handler(CommandHandler("view_config", view_config))
-dispatcher.add_handler(CommandHandler("auto_on", auto_on))
-dispatcher.add_handler(CommandHandler("auto_off", auto_off))
-dispatcher.add_handler(MessageHandler(Filters.photo, set_image))
+    # Agrega programación automática
+    scheduler = BackgroundScheduler()
+    for hora in data['horarios']:
+        h, m = map(int, hora.split(":"))
+        scheduler.add_job(auto_publicar, 'cron', hour=h, minute=m)
+    scheduler.start()
 
-Thread(target=send_startup_message).start()
-updater.start_polling()
-updater.idle()
+    updater.start_polling()
+    print("Bot corriendo...")
+    updater.idle()
+
+if __name__ == '__main__':
+    main()
