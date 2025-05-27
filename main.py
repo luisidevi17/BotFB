@@ -15,8 +15,8 @@ keep_alive()  # Mantiene activo el bot en Replit
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN = "TU_TOKEN_DE_TELEGRAM"
-OWNER_ID = 882455317  # Tu ID de Telegram
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+OWNER_ID = int(os.getenv("OWNER_ID", 882455317))  # Tu ID de Telegram
 
 DATA_FILE = 'data.json'
 
