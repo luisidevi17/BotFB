@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: fb-auto-poster
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python telegram_bot.py & if [ \"$(python - << 'EOF'\nimport yaml; print(yaml.safe_load(open('config.yaml'))['automatic'])\nEOF)\" = 'True' ]; then python main.py; fi"
+    cron:
+      - name: daily-morning
+        schedule: '0 8 * * *'
+        command: "python main.py"
+      - name: daily-evening
+        schedule: '0 18 * * *'
+        command: "python main.py"

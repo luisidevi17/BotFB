@@ -1,0 +1,13 @@
+telegram:
+  token: '8189807535:AAFj3CAkLrZ8IV_PoJbkem3VELyjZlAnPwg'
+facebook:
+  c_user: '100094823025050'
+  xs: '20%3A1p79hlwz4Or8fg%3A2%3A1748312857%3A-1%3A-1'
+  groups:
+    - 'https://m.facebook.com/groups/Ejemplo1'
+    - 'https://m.facebook.com/groups/Ejemplo2'
+    - 'https://m.facebook.com/groups/Ejemplo3'
+content:
+  text: 'Mensaje de prueba automático'
+  image: 'prueba.jpg'
+automatic: true
