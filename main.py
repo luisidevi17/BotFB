@@ -107,4 +107,48 @@ def set_hour(update: Update, context: CallbackContext):
     global scheduled_times
     times = update.message.text.replace('/set_hour ', '').strip().split(',')
     scheduled_times = [t.strip() for t in times]
-    update.message.reply_text(f"Horas programadas: {', '.join(scheduled
+    update.message.reply_text(f"Horas programadas: {', '.join(scheduled_times)}")
+
+@restricted
+def toggle_auto(update: Update, context: CallbackContext):
+    global auto_mode
+    auto_mode = not auto_mode
+    status = "activado" if auto_mode else "desactivado"
+    update.message.reply_text(f"Modo automático {status}.")
+
+# Función automática de publicación
+def auto_post_job():
+    while True:
+        now = datetime.now().strftime("%H:%M")
+        if auto_mode and now in scheduled_times:
+            print("Publicación automática activada.")
+            for group_url in group_list:
+                try:
+                    publish_to_facebook(group_url, stored_text, stored_image_path)
+                    time.sleep(15)
+                except Exception as e:
+                    print(f"Error en publicación automática: {e}")
+            time.sleep(60)  # Para evitar repetir en el mismo minuto
+        time.sleep(30)
+
+def main():
+    TOKEN = os.getenv("TELEGRAM_TOKEN")
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("set_text", set_text))
+    dp.add_handler(MessageHandler(Filters.photo, set_image))
+    dp.add_handler(CommandHandler("add_group", add_group))
+    dp.add_handler(CommandHandler("remove_group", remove_group))
+    dp.add_handler(CommandHandler("list_groups", list_groups))
+    dp.add_handler(CommandHandler("public_now", public_now))
+    dp.add_handler(CommandHandler("set_hour", set_hour))
+    dp.add_handler(CommandHandler("toggle_auto", toggle_auto))
+
+    threading.Thread(target=auto_post_job, daemon=True).start()
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
