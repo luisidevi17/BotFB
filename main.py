@@ -7,23 +7,23 @@ from datetime import datetime
 from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, CallbackContext, MessageHandler, Filters
 
-Configura logging
+#Configura logging
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO) logger = logging.getLogger(name)
 
-Variables globales
+#Variables globales
 
 stored_text = "" stored_image_path = "" group_list = [] auto_mode = False scheduled_times = [] last_post_minute = None
 
-Verifica variables de entorno necesarias
+#Verifica variables de entorno necesarias
 
 try: TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN") TELEGRAM_USER_ID = int(os.getenv("TELEGRAM_USER_ID")) FB_COOKIES = json.loads(os.getenv("FACEBOOK_COOKIES")) except Exception as e: raise ValueError("Faltan o son inválidas las variables de entorno necesarias: TELEGRAM_TOKEN, TELEGRAM_USER_ID, FACEBOOK_COOKIES")
 
-Función para restringir comandos solo a tu usuario
+#Función para restringir comandos solo a tu usuario
 
 def restricted(func): def wrapped(update: Update, context: CallbackContext, *args, **kwargs): if update.effective_user.id != TELEGRAM_USER_ID: update.message.reply_text("No tienes permiso para usar este bot.") return return func(update, context, *args, **kwargs) return wrapped
 
-Publicar en grupo de Facebook (simulado)
+#Publicar en grupo de Facebook (simulado)
 
 def publish_to_facebook(group_url, text, image_path): headers = { 'Cookie': '; '.join([f"{cookie['name']}={cookie['value']}" for cookie in FB_COOKIES]), 'User-Agent': 'Mozilla/5.0', } logger.info(f"Publicando en {group_url} con texto: {text} y imagen: {image_path}") # Aquí se haría la petición real a Facebook si se implementa.
 
