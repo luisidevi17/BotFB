@@ -1,4 +1,0 @@
-yeast
-yaml
-selenium
-python-telegram-bot
