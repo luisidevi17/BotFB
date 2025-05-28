@@ -3,4 +3,5 @@ requests
 bs4
 pytz
 flask
+selenium
 apscheduler
