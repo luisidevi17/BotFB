@@ -4,9 +4,11 @@ import json
 import logging
 from datetime import datetime
 from threading import Thread
+
 from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from apscheduler.schedulers.background import BackgroundScheduler
+
 from facebook_poster import publicar_en_facebook
 from utils import cargar_config, guardar_config
 from keep_alive import keep_alive
@@ -22,7 +24,7 @@ logger = logging.getLogger(__name__)
 # ── Carga inicial de configuración ─────────────────────────────────────────────
 config = cargar_config()
 
-# ── Arranca servidor web para keep-alive ────────────────────────────────────────
+# ── Mantener vivo con Flask ────────────────────────────────────────────────────
 keep_alive()
 
 # ── Scheduler para publicación automática ─────────────────────────────────────
@@ -37,7 +39,7 @@ def trabajo_automatico():
                 mensaje=config["texto"],
                 ruta_imagen=config.get("imagen")
             )
-            time.sleep(20)
+            time.sleep(20)  # intervalo entre publicaciones
         Bot(token=TOKEN).send_message(chat_id=OWNER_ID, text="✅ Publicación automática completada.")
 
 def schedule_auto():
@@ -62,24 +64,24 @@ def restricted(fn):
 
 @restricted
 def start(update, ctx):
-    ctx.bot.send_message(chat_id=update.effective_chat.id, text="🤖 Bot activo. Usa /help para ayuda.")
-    logger.info("Bot iniciado por /start")
+    ctx.bot.send_message(chat_id=update.effective_chat.id, text="🤖 Bot activo. Usa /help para ver comandos.")
+    logger.info("Bot iniciado (/start)")
 
 @restricted
 def help_cmd(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="""
-/start          – Ver estado del bot
-/help           – Lista de comandos
-/set_text TXT   – Guardar texto
-/set_image      – Enviar imagen a guardar
-/set_cookies CK – Guardar cookies de Facebook
-/add_group URL  – Añadir grupo
-/list_groups    – Listar grupos
-/show_config    – Ver configuración actual
-/set_time HH:MM – Programar publicación automática
-/auto_on        – Activar automático
-/auto_off       – Desactivar automático
-/post_now       – Publicar manualmente
+/start           – Ver estado del bot
+/help            – Mostrar esta ayuda
+/set_text TEXTO  – Guardar texto de publicación
+/set_image       – Enviar y guardar imagen
+/set_cookies CK  – Guardar cookies de Facebook
+/add_group URL   – Añadir grupo
+/list_groups     – Listar grupos añadidos
+/show_config     – Ver configuración actual
+/set_time HH:MM  – Programar hora automática
+/auto_on         – Activar publicación automática
+/auto_off        – Desactivar publicación automática
+/post_now        – Publicar manualmente ahora
 """)
 
 @restricted
@@ -167,7 +169,7 @@ def post_now(update, ctx):
     trabajo_automatico()
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="✅ Publicación manual ejecutada.")
 
-# Registración de handlers
+# Registrar handlers
 dp.add_handler(CommandHandler("start", start))
 dp.add_handler(CommandHandler("help", help_cmd))
 dp.add_handler(CommandHandler("set_text", set_text))
