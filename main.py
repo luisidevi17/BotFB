@@ -33,14 +33,16 @@ sched = BackgroundScheduler(timezone=timezone("America/Havana"))
 
 def trabajo_automatico():
     if config.get("modo_auto") and config.get("texto") and config.get("grupos"):
+        logger.info("💥 Ejecutando trabajo automático...")
         for grupo in config["grupos"]:
+            logger.info(f"➡️ Publicando en: {grupo}")
             publicar_en_facebook(
                 cookies=config["cookies"],
                 grupo_url=grupo,
                 mensaje=config["texto"],
                 ruta_imagen=config.get("imagen")
             )
-            time.sleep(20)  # intervalo entre publicaciones
+            time.sleep(20)
         Bot(token=TOKEN).send_message(chat_id=OWNER_ID, text="✅ Publicación automática completada.")
 
 def schedule_auto():
