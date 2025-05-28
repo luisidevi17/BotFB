@@ -9,6 +9,7 @@ from telegram import Update, Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from pytz import timezone
 from facebook_poster import publicar_en_facebook
 from utils import cargar_config, guardar_config
 from keep_alive import keep_alive
@@ -28,7 +29,7 @@ config = cargar_config()
 keep_alive()
 
 # ── Scheduler para publicación automática ─────────────────────────────────────
-sched = BackgroundScheduler()
+sched = BackgroundScheduler(timezone=timezone("UTC"))
 
 def trabajo_automatico():
     if config.get("modo_auto") and config.get("texto") and config.get("grupos"):
