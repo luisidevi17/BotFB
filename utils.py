@@ -1,14 +1,21 @@
 import json
 import os
 
-DATA_FILE = "config.json"
+CONFIG_FILE = "config.json"
 
 def cargar_config():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {}
+    return {
+        "texto": "",
+        "imagen": None,
+        "cookies": "",
+        "grupos": [],
+        "modo_auto": False,
+        "hora": "08:00"
+    }
 
-def guardar_config(config):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
+def guardar_config(cfg):
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2, ensure_ascii=False)
