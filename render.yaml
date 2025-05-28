@@ -3,5 +3,5 @@ services:
     name: telegram-facebook-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    buildCommand: "./install_chrome.sh && pip install -r requirements.txt"
+    startCommand: "python3 main.py"
