@@ -32,8 +32,8 @@ keep_alive()
 sched = BackgroundScheduler(timezone=timezone("America/Havana"))
 
 def trabajo_automatico():
-    if config.get("modo_auto") and config.get("texto") and config.get("grupos"):
-        logger.info("💥 Ejecutando trabajo automático...")
+    logger.info("💥 Ejecutando trabajo automático...")
+    if config.get("texto") and config.get("grupos"):
         for grupo in config["grupos"]:
             logger.info(f"➡️ Publicando en: {grupo}")
             publicar_en_facebook(
@@ -43,7 +43,9 @@ def trabajo_automatico():
                 ruta_imagen=config.get("imagen")
             )
             time.sleep(20)
-        Bot(token=TOKEN).send_message(chat_id=OWNER_ID, text="✅ Publicación automática completada.")
+        Bot(token=TOKEN).send_message(chat_id=OWNER_ID, text="✅ Publicación completada.")
+    else:
+        logger.warning("❌ Falta texto o grupo para publicar.")
 
 def schedule_auto():
     sched.remove_all_jobs()
@@ -168,7 +170,9 @@ def auto_off(update, ctx):
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="✅ Auto-publicación DESACTIVADA.")
 
 @restricted
+@restricted
 def post_now(update, ctx):
+    logger.info("📢 /post_now fue llamado.")
     trabajo_automatico()
     ctx.bot.send_message(chat_id=update.effective_chat.id, text="✅ Publicación manual ejecutada.")
 
