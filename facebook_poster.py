@@ -1,41 +1,38 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+import requests
+from bs4 import BeautifulSoup
+import logging
 import time
 
+logger = logging.getLogger(__name__)
+
 def publicar_en_facebook(cookies, grupo_url, mensaje, ruta_imagen=None):
-    opts = Options()
-    opts.add_argument("--headless")
-    opts.add_argument("--no-sandbox")
-    opts.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Chrome(options=opts)
+    session = requests.Session()
+    # Parsear cookies
+    for c in cookies.split(";"):
+        if "=" in c:
+            k, v = c.strip().split("=", 1)
+            session.cookies[k] = v
 
-    try:
-        driver.get("https://facebook.com")
-        for cookie in cookies.split(";"):
-            if "=" in cookie:
-                name, value = cookie.strip().split("=", 1)
-                driver.add_cookie({"name": name.strip(), "value": value.strip()})
-        driver.get(grupo_url)
-        time.sleep(5)
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = grupo_url.replace("www.", "mbasic.")
+    resp = session.get(url, headers=headers)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-        caja = driver.find_element(By.XPATH, "//div[contains(@aria-label, 'Escribe algo') or contains(@aria-label, 'Write something')]")
-        caja.click()
-        time.sleep(2)
+    dtsg = soup.find("input", {"name": "fb_dtsg"})["value"]
+    jazoest = soup.find("input", {"name": "jazoest"})["value"]
+    action = soup.find("form", {"method": "post"})["action"]
+    post_url = "https://mbasic.facebook.com" + action
 
-        editable = driver.find_element(By.XPATH, "//div[@role='textbox']")
-        editable.send_keys(mensaje)
-        time.sleep(2)
+    data = {"fb_dtsg": dtsg, "jazoest": jazoest, "xc_message": mensaje}
+    files = {}
+    if ruta_imagen:
+        files["pic"] = open(ruta_imagen, "rb")
 
-        if ruta_imagen:
-            subir = driver.find_element(By.XPATH, "//input[@type='file']")
-            subir.send_keys(ruta_imagen)
-            time.sleep(5)
-
-        boton_publicar = driver.find_element(By.XPATH, "//div[@aria-label='Publicar' or @aria-label='Post']")
-        boton_publicar.click()
-        time.sleep(5)
-    except Exception as e:
-        print("Error al publicar:", e)
-    finally:
-        driver.quit()
+    resultado = session.post(post_url, headers=headers, data=data, files=files)
+    time.sleep(2)
+    if resultado.ok:
+        logger.info(f"Publicado en {grupo_url}")
+        return True
+    else:
+        logger.error(f"Error {resultado.status_code}: {resultado.text}")
+        return False
