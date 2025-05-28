@@ -29,7 +29,7 @@ config = cargar_config()
 keep_alive()
 
 # ── Scheduler para publicación automática ─────────────────────────────────────
-sched = BackgroundScheduler(timezone=timezone("UTC"))
+sched = BackgroundScheduler(timezone=timezone("America/Havana"))
 
 def trabajo_automatico():
     if config.get("modo_auto") and config.get("texto") and config.get("grupos"):
